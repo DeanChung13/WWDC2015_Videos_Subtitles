@@ -1,0 +1,728 @@
+文斯·斯派德: 大家好
+我是文斯·斯派德
+是Cocoa框架的工程師
+今天我和大家分享的內容
+是《進度報告的最佳實踐》
+在Cocoa中用NSProgress代表
+我先來介紹 NSProgress
+然後我們一起聊聊把NSProgress
+對象組合在一起
+接着是如何將NSProgress作爲
+取消 暫停和恢復任務的界面
+然後再聊聊 NSProgress
+和用戶界面掛鉤還要總結出
+一些技巧和最佳實踐
+現在就開始
+NSProgress是Foundation的一個對象
+代表某項任務完成
+任務可以是下載文檔安裝app
+或者是你自己的應用任務
+NSProgress對象的存在 是讓你輕鬆跨越
+自己的系統的各種組件報告進度
+實際上 有若干 Cocoa API都在通過NSProgress
+彙報進度 如NSBundleResource Request
+UIDocument和 NSData
+可以通過NSProgress獲取信息 
+瞭解那些API在你的應用中在做什麼
+NSProgress進行了本地化 
+可以用它向用戶顯示信息
+告知在發生什麼
+我們還有辦法影響它表述的內容
+稍後就來介紹
+但是首先來瞭解NSProgress的核心屬性
+我們有totalUnitCount是關於要做
+多少任務以及completed-UnitCount
+表示多少任務已經完成
+在任務發生時這部分會更新
+fractionCompleted是個二元值 從0到1
+更新 讓你瞭解距離任務完成還有多久
+因此totalUnitCount和
+completed-UnitCount
+這些屬性所涉及的單位由你來定
+是在進度方面需要跟蹤的任何單位
+也許是字節 文件數照片 甚至是抽象單位
+如部分任務的百分比之類
+每個單獨NSProgress對該以什麼單位報告
+都有自己的想法
+如果不清楚總共有多少任務
+也就不知道你的totalUnitCount
+可以將進度定爲不確定
+可以通過設定 completed-UnitCount
+或totalUnitCount爲負值來實現
+接下來 我們談談本地化
+NSProgress有着兩個屬性本地化Description
+和本地化AdditionalDescription
+這些都可以向用戶顯示
+可以自己設置但是NSProgress 
+會爲你默認一些內容
+這裏的示例是默認本地化Description
+和本地化AdditionalDescription
+NSProgress的 totalUnitCount
+是500萬多completed-UnitCount
+是41.9萬多
+默認本地化完成7%
+本地化AdditionalDescription格式
+這些數據都很漂亮
+這是默認狀態
+如果想以某種不同的方式
+可以自行設置本地化Description
+和本地化 AdditionalDescription
+但是接着需要真正用你的app
+所支持的語言進行本地化
+其實不必真這麼做我們還有兩個旋鈕
+可用於調整這些默認值
+首先是通過類型屬性
+目前 文檔類唯一的選項是NSProgressKindFile
+使用它表明你的單位是字節
+那麼當NSProgress 單位是字節
+就會這樣做格式
+那麼會看到 它顯示5.3兆字節的419千字節
+還有一個旋鈕可改變默認本地化Description
+是通過用戶信息字典的部分鍵來實現
+NSProgress具備用戶信息字典 這裏有個方法
+Set User Info Object For Key
+這可以實現
+在userInfo中設置鍵和數值
+有個鍵幾乎對任何NSProgress都有用
+這就是NSProgressEstimated 
+Time Remaining Key
+這裏的數值是NSNumber
+表示到任務完成時還剩下多少秒鐘
+大家來看 比如說 如果我們設定爲97秒
+本地化AdditionalDescription現在就包括
+這樣的信息 格式爲剩餘1分37秒
+還有額外的userInfo鍵 
+如果將文件設置種類纔會用到
+首先來看NSProgress File
+Operation Kind Key
+這在告知NSProgress操作的類型
+這是在文檔中執行
+數值是關於下載解壓縮
+接受 或複製那麼如設置 FileOperation Kind
+爲NSProgress FileOperation
+Kind Downloading
+來更新本地化Description
+表示它在下載文件
+當Kind是File時 還有個鍵可用就是NSProgress
+File URL Key
+這是所處理文件的NSURL 
+在設置時
+本地化Description 將包括文件名
+在本例中是 photos.zip來自於所提供的URL
+如果是運行一組文件則還有選項
+NSProgress File Total Count Key
+和 CompletedCount Key
+這裏是個示例
+我們設置FileCompleted Count爲7
+和 File Total Count爲9
+本地化Description可以使用這個信息
+現在顯示下載9個文件
+注意類型仍是File單位也仍然是字節
+就是在處理的文件的總字節數
+最後我們有NSProgress Throughput Key
+這是正處理的文件操作的每秒字節數
+比如 下載文件時速度極快是5萬字節每秒
+如果我們在用戶信息設置吞吐量
+NSProgress
+可將該信息包括到本地化Description當中
+所以顯示爲50千字節每秒
+所有這些選項都可以真正
+提供幫你向用戶提供更多信息 
+告知其在發生什麼
+而無需你親自做本地化
+我們繼續之前先來說說責任職責
+NSProgress有兩個端
+分別是生成端和客戶端
+在生成端
+當生成NSProgress時你要負責設置它的屬性
+在任務完成時更新completedUnitCount
+因此在生成時要設置totalUnitCount
+Kind 設置用戶信息的鍵
+在任務完成時更新
+completedUnitCount
+另一方面如若從他人那裏
+收到NSProgress你是客戶端
+你可以獲得並觀察各類屬性
+totalUnitCount和
+completed-UnitCount
+fractionCompleted或這些
+localized-Description
+但是不會設置這些屬性
+因爲這樣做會導致與
+NSProgress生成器造成混淆
+當生成NSProgress時需要一種辦法
+將之提供給客戶端當你是客戶端時需要辦法來獲得它
+有一種做法
+是通過NSProgress報告協議
+我們把它加在了OS X10.11和iOS 9
+相當簡單 可以定義屬性 進度
+在Cocoa UIDocument
+和NSBundleResourceRequest
+都會執行
+這樣會很明顯
+類會支持進度報告
+好 現在 我們做個演示來看看代碼
+我們這裏有app
+相當簡單
+是個照片 點擊輸入按鈕就會下載照片
+當下載結束時
+會向用戶顯示
+用戶體驗相當糟糕
+用戶基本上不清楚在發生什麼
+我們可以通過向用戶報告下載進度來改善效果
+如果進入項目就會有下載類
+這是用於下載照片
+還有初始程序
+找到URL來下載
+它還具備一個完成處理器 用來調用
+下載數據或在出現錯誤時調用錯誤
+接下來是開始方法 是用來...
+用來啓動整個下載我們還有若干
+針對各種下載功能的私有方法
+我們還有這些便捷方法
+可以在下載進行時進行調用
+我們還有 Will Begin Download 
+下載開始時調用並可獲得下載的總長度
+Did Download Data
+在下載完成時定期調用
+Did Finish Download
+是在下載完成時調用
+Did Fail To Download 在下載期間
+如果出錯時 會調用
+我們現在要做的是對下載操作
+報告進度可以通過
+使用NSProgress-Reporting協議來實現
+我們繼續來進行類的聲明
+可以把NSProgress-Reporting
+加入類的名單
+爲了與NSProgress-Reporting一致
+我們需要ProgressProperty
+我們把它加上是在NSProgress
+在初始程序中我們需要生成
+NSProgressObject
+因爲...
+我們還不清楚已經下載了多少
+我們會把進度定爲不確定
+把進度定爲不確定 有種方法
+是設置totalUnitCount爲負值
+那麼把totalUnitCount設爲負1
+因爲我們知道這裏在下載文件
+可以爲NSProgress提供更多的信息告知在發生什麼
+我們可以設置Kind
+爲NSProgressKind File
+並設置用戶信息
+NSProgress File OperationKind Key
+爲Downloading
+現在就生成了NSProgress 在下載完成後
+需要將它更新即可
+回到WillBegin Download方法
+這可將所有內容下載下來
+我們需要設置totalUnitCount
+to that amount
+此刻 進度不再是不確定
+在Did DownloadData回調
+這是進行定期調用設置
+completed-UnitCount
+爲下載字節數
+最後在DidDownload Data回調
+可以將completed-UnitCount
+設置爲下載的總字節數
+以及進度結束的方式
+現在用戶界面已經在使用
+NSProgressReporting並在尋找需要執行的下載
+還會顯示進度當我們搭建並運行app時
+我們按下輸入按鈕
+我們有個爲用戶提供的下載報告進度
+感覺要好多了
+好
+回到幻燈片
+文斯·斯派德: 好
+這就是NSProgress的基礎內容
+現在我們來看NSProgress爲什麼強大
+是因爲它可以在其他進度對象中
+構建進度對象
+現在因爲按下下載按鈕並不意味着
+只有一件事在真正發生
+可能是下載 驗證 解壓縮
+操作 都在報告操作中運行
+但用戶只看到一個進度條
+就當這些框代表各自的
+NSProgress對象
+它們各自按照自己的單位報告其進度
+不必擔心其他的對象
+但是我們希望它們能組成一個NSProgress
+以便我們將之與用戶界面掛鉤
+我們要生成NSProgress對象
+並稱之爲整體進度
+我們可以將其他進度都納入
+整體進度中
+整體程序成爲另外三個
+進度對象的父對象下載 驗證 
+和解壓縮進度成爲子對象
+當子對象完成時
+整體程序也會更新
+那麼爲構成NSProgress對象 我們有這個
+pendingUnitCount想法
+pendingUnitCount
+是賦值給子對象的進度對象的父對象
+totalUnitCount的一部分
+pendingUnitCount是關於父對象的單位
+子對象也有自己的單位
+比如把父對象的pendingUnitCount
+賦值給子對象
+那麼 子對象進度結束時
+會出現父對象的completed-UnitCount被相應子對象的
+pendingUnitCount所增加
+那麼在有子對象的時候
+不用手動更新completed-UnitCount
+在子對象結束的時候 這也許會與正在
+發生的更新相互衝突
+當處於父對象的進度時你非常希望把
+整個totalUnitCount 賦值給子對象
+我們繼續一個組合圖
+比如要輸入一些照片
+我們有整體NSProgress對象
+共有兩個照片那麼輸入進度的
+totalUnitCount爲2
+它會把全部totalUnitCount賦值給
+它的子對象也就是下面的單獨照片進度
+每個照片都從整體輸入進度中
+賦值了一個照片的pendingUnitCount 
+現在個體照片進度都很相似
+不過單位不同
+有個分兩步的totalUnitCount
+每一步都要用到一個pendingUnitCount
+一個是下載一個是過濾器
+最後我們有了下載和過濾進度
+它們都有自己的單位
+沒有子對象
+要手動更新completed-UnitCount
+好我把completed-Unit Count 放在這裏
+這是零點
+完成部分在底部用百分比顯示
+因爲我們還沒有做什麼 現在是零值
+我們看看 底部的
+completed-UnitCounts
+更新後會怎樣
+大家可以看到因爲子對象都完成了
+完成部分在父對象中在更新
+進度在流向父對象
+請注意整體進度的
+completed-UnitCount
+還依然是零值
+一旦子對象完成而且照片1仍未
+完成時 completed-UnitCount 纔會增加
+一旦子對象完成
+completedUnitCount被相應子對象的
+pendingUnitCount而增加
+大家可以看到輸入進度已經完成了
+一張照片 因爲照片1現在是100%完成
+另一方面 完成部分是根據pendingUnitCount
+和子對象
+完成的部分在倍增
+它不會等到子對象完成再更新
+當所有內容都是100%時輸入進度就得以完成
+這個示例就是當組成NSProgress 
+對象時 會出現的情況
+我們再詳細介紹一下
+這裏是單獨照片輸入的進度
+這裏只是一張照片
+分爲兩個步驟下載和過濾器
+把totalUnitCount定爲2
+假設下載會用到下列的單位之一
+過濾器會用到下列單位之一
+每個步驟會佔用照片整體進度的一半
+但是這些操作如果不相等會怎樣？
+如果我們知道過濾器相對下載時間
+要快許多 那麼就會更像是這樣的結果？
+好 單位可以是任意的
+可以認爲 實際上有10個步驟
+且下載被賦值了其中的9個
+過濾器被賦值了1個
+現在 隨着下載的完成
+下載步驟佔了輸入進度的90%
+過濾器佔了其餘的10%
+可以調整進度的單位以便
+權衡爲子對象賦值的任務
+好 我們來看在代碼中怎麼體現
+構建NSProgress對象可以通過兩種方式
+第一種方式我馬上就會講到是隱形組合
+那麼你生成一個父對象的進度對象
+這將是之前的photoProgress 
+分爲兩個步驟
+可以把totalUnitCount定爲2
+我們想做的是把下載進度添加爲子對象
+那麼 我們在父對象進度調用的是Current
+With Pending Unit Count
+photoProgress
+它的作用是設置線程本地當前進度
+這樣photoProgress 就是當前進度
+pendingUnitCount設置爲1 
+基本上是爲隨後的進度而保留
+並加入當前的進度當中
+接下來 我們調用下載功能
+startDownload
+這會生成進度會用到NSProgress
+totalUnitCount簡易構造函數
+以及totalUnit簡易構造函數
+我們將在當前進度中添加生成的進度
+加入下載 作爲photoProgress的子對象
+接下來 我們需要清理一下
+那麼 我們調用
+賦值的當前進度photoProgress
+不再是當前進度
+就這樣
+現在我們用了隱形組件
+添加子對象爲父對象
+在使用隱形組件時需要記住幾點
+在支持隱形組件時
+你想要立刻生成NSProgress
+並用到totalUnitCount簡易構造函數
+這是因爲第一個進度對象
+添加到目前的進度會佔用整個pendingUnitCount
+如果生成了它 首先你不必擔心
+存取器問題 或其他調用無意中對
+父對象pendingUnitCount
+的佔用
+當然 要做記錄
+隱形組件畢竟是隱形
+客戶端不會知道你支持隱形組件除非你說出來
+而且 如果此時未加入
+子對象 你調用賦值的當前進度
+pendingUnitCount就會立即加入
+父對象的completedUnitCount
+那麼completed-UnitCount 也會更新
+因此 構建NSProgress 對象的第二種方式
+在OS X 10.11和iOS 9中
+是新功能 稱之爲顯性組件
+那麼 你收到一個進度希望從什麼地方添加爲子對象
+也許是符合
+NSProgressReporting的內容那就是過濾器
+現在有你想加入其中的父對象進度
+就拿之前的photoProgress舉例
+然後會用pendingUnitCount
+調用addChild 
+在你希望添加的進度當中
+並加入子對象進度filterProgress 這裏
+在給出pendingUnitCount
+是你想加入其中的
+因爲這是一個步驟我們想加入pendingCount 1
+就這樣
+現在 進度是父對象進度的子對象
+這裏是部分指南說明何時使用
+顯性或隱形組件
+如果你的方法無法返回NSProgress
+例如你超越了無法改變的API邊界
+使用隱形組件並記錄下
+它支持隱形組件
+或 因爲顯性組件在OS X 10.11和iOS 9中
+在老版本中 必須要用到隱形組件
+否則 一般都會想要使用隱形組件這簡單多了
+好 我們繼續來看組件演示
+這裏是照片下載類
+我們上次就是把進度報告加到其中
+如果運行app就會有稍許改動
+現在有照片的CollectionView
+而不是單獨的照片
+那麼當我們按下輸入
+它沒有隻是下載這些圖像
+還運行了過濾器
+因此 我們沒有整體的進度
+信息 所以這種體驗很是糟糕
+我們可以通過具備操作報告進度來改善體驗
+我們這就動手 
+如果具備支持
+NSProgressReporting的下載類
+還有具備類方法的過濾器類 
+可以處理圖像並返回過濾後的圖像
+我們有這個輸入類它可以下載
+並在下載完成時運行過濾器
+因此可以結合進度 
+比如我們將把下載進度
+和過濾器操作的進度相結合
+我們現在來看照片輸入
+這裏有個初始程序可以找到URL
+並用這個URL生成下載
+它還有完成處理器 用來調用
+過濾後和下載的圖像
+或是在出現錯誤時調用錯誤
+在開始輸入時 還有開始方法
+這個開發方法對下載設置了
+完成處理器併爲下載數據
+生成UIImage再將圖像
+傳給過濾器 獲得過濾後圖像
+然後用過濾後圖像調用自己的完成處理器
+一旦完成處理器設置好就開始下載
+這樣我們想實現將照片輸入報告
+的下載和過濾器進度都包括在內的綜合進度
+那我們就需要再做一遍
+讓照片輸入類符合NSProgressReporting
+我們再來進行類的聲明
+並加入NSProgressReporting
+現在 我們需要有進度屬性我們把它加上
+還要生成NSProgress對象
+這次關於單位我們要用一些比較抽象的內容
+我們已經運行了幾次app結果發現
+如果讓下載佔到輸入進度的90%左右這樣效果最好
+我們把totalUnitCount定爲10
+那麼 下載佔到totalUnitCount
+的9過濾器會用到其餘的1
+現在是開始方式
+因爲下載已經和NSProgressReporting一致
+我們可以從中得到進度對象並把它加入進度
+可以用顯性添加子方式來實現
+我們調用進度添加子對象下載進度
+pendingUnitCount爲9
+它佔據了進度的90%
+我們想做的是把過濾器的進度加入進度中
+但是過濾器是類方法
+可以處理圖像並返回圖像
+並無明顯方法可以從中獲得進度
+但如果進入照片過濾器類
+我們可以看到這裏有評論
+稱它可以支持隱形進度組件
+那麼我們可以使用隱形進度組件
+並把它添加爲子對象
+我們回到輸入開始方法
+下載完成處理器可以被調
+用到背景線程在這裏 我們會成爲當前進度
+把pendingUnitCount定爲1
+注意 我說過下載的完成處理器
+可以被調用到背景線程
+但是這沒問題 因爲我們在同一線程後會立即調用過濾器
+在我們成爲當前進度後 過濾器會運行
+並把自己作爲當前進度的子對象
+一旦返回 我們需要不再是當前進度因此我們會調用對出當前進度
+就這樣
+現在我們把下載和過濾器進度都加入了
+輸入進度
+現在如果運行app按下輸入
+大家可以看到輸入是各個照片的報告進度
+很好 用戶對正在發生的事情
+掌握更多信息但是也沒那麼好
+我們只需要向用戶顯示一個進度
+我們這就動手
+簡略一點我們要進入
+根View Controller照片View Controller
+這是整體進度屬性
+它是NSProgress的客戶端 剛得到這個
+並且準備和UI掛鉤並顯示
+它不會自己來生成
+它還有Album的參考
+即我們下載的照片集合
+它還有工具欄按鈕的IBAction
+本例中 開始輸入按鈕
+和IBAction會調用 相冊中的輸入照片
+如果來看相冊這裏有一組照片
+並通過URL
+在主包生成照片
+且在輸入照片方式中經過每個照片
+並調用其開始輸入
+如果來看照片我們的照片都有圖像URL
+這是從初始程序獲得
+還有UIImage屬性開始可以作爲定位符
+還有開始輸入方法
+這是由相冊來調用的
+它生成我們加入NSProgressReporting
+照片輸入類然後設置
+該照片輸入類的完成處理器
+把圖像設置成已輸入的圖像
+然後在 在設置完成處理器後
+開始輸入並備份以備不時之需
+這樣我們想
+把照片輸入進度並把所有發生的輸入
+都集合到一個進度中
+我們再來看根View Controller
+我們可以做的
+是我們的輸入進度方法返回NSProgress
+我們會把整體進度屬性設定爲
+那個返回的NSProgress
+輸入照片還並未返回NSProgress 
+所以我們需要這麼做
+我們進入相冊輸入照片方法
+現在是返回空
+我們需要讓它返回到NSProgress
+然後還要生成我們準備返回的進度對象
+因爲進度對象會爲相冊的每張照片
+準備子對象我們希望
+totalUnitCount爲相冊中的照片數
+然後我們繼續並返回
+接下來我們要做的是要讓我們的照片
+開始輸入方法也返回一個進度
+那麼 我們會把它賦值到本地的可變輸入進程
+那麼 我們添加這個作爲子對象
+到相冊進度把pendingUnitCount
+定爲1因爲這是一張照片的輸入進度
+現在 在我們的照片開始輸入方法
+當前返回空
+我們希望它返回到NSProgress我們這就動手
+因爲照片輸入已經與NSProgressReporting
+相一致
+我們可以把進度屬性返回給它
+就這樣 這就是組件了
+我們把整體進度都賦值給了
+一個進度...是由所發生的各自輸入的子對象構成
+各個輸入都有下載和過濾器子對象
+我們來運行這個app
+現在位於底部的是整體進度
+在所有這些子對象完成後會進行更新
+把小的進度條移開留下的作爲練習
+好
+文斯·斯派德: 好 回到幻燈片
+我想談談取消 暫停和恢復任務
+NSProgress對象可以作爲取消任務的工具欄
+NSProgress的生成器設置可取消
+和cancellationHandler
+如果操作在同步完成一些任務
+cancellationHandler並沒有真正工作
+你還可以取消
+NSProgress對象的取消旗標
+客戶端可以調用取消NSProgress將設置取消
+爲真 並觸發cancellationHandler
+那麼取消任務就會轉至子對象
+如果子進度有取消任務處理器
+這些也會觸發
+而且是永久性的
+一旦進度取消並無非取消功能
+暫停任務和取消任務很相似
+NSProgress的生成器沿着暫停任務處理器
+和恢復任務處理器設置可暫停
+恢復處理器在 OS X 10.11和iOS 9中
+是新功能
+還可以取消暫停旗標確定是否進度目前是暫停狀態
+客戶端會調用暫停並設置暫停
+調用暫停處理器或調用恢復
+再取消暫停觸發恢復處理器
+暫停任務和恢復任務
+也會和取消任務一樣轉至子對象進度
+我們繼續做一個演示
+如果你的對象 如果你的操作已經支持取消 暫停和恢復任務
+就可以非常容易地面對NSProgress
+我們回到照片View Controller
+這是根View Controller
+這次app多了幾個按鈕
+如果按下輸入還有個取消和暫停按鈕
+但是現在並未做任何事情需要把它們連起來
+我們這就動手
+有IBAction來定義這些按鈕
+還有取消輸入 暫停輸入和恢復輸入
+現在要做的是在所有這些行動中 
+我們會調用整體進度的取消暫停和恢復
+現在一旦...現在將在任何子對象進度上
+調用任何取消暫停或恢復處理器
+目前還沒有
+但是下載會支持取消暫停和恢復任務
+我們進入照片下載
+如果進入 Will Begin Download回調
+可以加入取消 暫停 恢復
+支持這個NSProgress
+那麼首先設置可取消爲真
+並設置cancellationHandler
+這裏cancellationHandler
+在用NSUserCanceled Error
+調用Failed Download With Error
+我們同樣還是可暫停可恢復 
+那麼會把可暫停設定爲真在暫停處理器中
+我們稱之爲SuspendDownload方法
+在恢復處理器中我們在調用Resume Download
+現在注意這些都是私有方法
+Failed DownloadWith Error
+Suspend Download和Resume Download
+那我們只把這個功能用於通過NSProgress
+取消 暫停和恢復任務
+但是這可以是非常強大的互動點
+現在 我們運行app壓縮 開始輸入
+暫定 進度 下載自行暫停
+我們按下恢復就會恢復
+還可以按下取消就會取消
+現在是整體進度在發送
+爲任何可能的子對象觸發
+cancellationHandler
+就這樣
+回到幻燈片
+文斯·斯派德:好
+我們先聊聊用戶界面
+在生成NSProgress對象時
+我們都經歷過這些問題
+但是最終目的是告知用戶
+現在在發生什麼這就是說用戶界面
+那麼所有的NSProgress屬性
+都是可看的關鍵值
+客戶端可以添加KVO觀察者來更新UI
+例如 客戶可以更新UI視圖來查看NSProgress
+作爲fraction-Completed屬性
+或是更新標籤爲localizedDescription
+同樣要注意 這些KVO回調也許在主線程中
+不必調用
+因此如果在更新UIControl
+你會希望把任務移到主隊列中
+這裏的示例是加上觀察者後的效果
+可以在NSProgress爲關鍵路徑調用addObserver 
+針對fraction-Completed屬性
+那麼在覆蓋觀察Value For Key Path中 
+我們把部分任務列入主隊列
+在主隊列我們從NSProgress
+獲得fractionCompleted
+並更新UIProgressView
+基本是這樣
+類似的樣式可以用於更新UI的標籤或按鈕
+好的 最後我們來看NSProgress的最佳實踐
+以爲講座題目中提到最佳實踐 
+我最後要抓緊時間介紹一下
+首先是完成
+不要使用fraction-Completed 來決定完成
+這是個浮點值是由...
+是從計算得出
+和1.0來比較 不一定正確
+而要使用completedUnitCount
+和totalUnitCount 
+除非進度不確定或totalUnitCount爲0
+另外 進度必須完成這點很重要
+父對象的completedUnitCount
+只有在子對象完成後纔會更新
+同樣NSProgress 會優化完成的子對象的方法
+這樣在任務完成時可以節省內存
+之後 NSProgress對象不得再次使用
+一旦完成 就完成了
+一旦取消 就取消了
+如果需要再次使用NSProgress
+而不是重新來過並提供機制
+那麼進度的客戶端會瞭解對象已經取代比如通知
+最後 性能表現
+不要在小循環更新
+completedUnitCount
+例如 不要更新下載的每個字節
+如果有父對象我們可以調用
+來更新fractionCompleted
+這樣用時可能會超過預期
+因爲組件可以任意大 並且很深
+但是當你這麼做時不要忘記完成進度
+一定確保更新completedUnitCount
+爲totalUnitCount
+否則 你會面對即將完成的進度
+這對誰都不好
+就這樣
+我們講了許多如果有效使用NSProgress 
+需要牢記的是這麼幾點
+每個進度都有自己的單位
+可以使用隱形或顯性
+這麼做時pendingUnitCount在
+父對象的單元中
+同樣可以生成NSProgress或你就是客戶端
+對於本地化 可以使用類型和用戶屬性
+幫助實現更好的localizedDescription
+NSProgress是取消暫停和恢復任務的
+極好界面
+它的所有屬性均爲可觀察KVO 因此可以使用
+用它來更新UI
+就是這樣
+若想了解更多詳情可以查看文檔資料
+可以查看NSProgress的標題
+其中做了很好的註解
+我們還給出了新示例代碼photoProgress
+是根據我今天的演示提供的
+如果需要任何幫助可以前往開發人員論壇
+或聯繫開發人員技術支持
+如果是一般性諮詢可以電郵聯繫保羅·馬科斯
+就是這些
+謝謝
